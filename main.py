@@ -52,7 +52,7 @@ def main():
     train_loader = DataLoader(dataset, batch_size=500, shuffle=True)
 
     # Initialize model
-    hidden_size = 256
+    hidden_size = 48
     model = Net(hidden_size)
     
     # Load model 
@@ -66,7 +66,7 @@ def main():
     print(model.state_dict())
 
     # Train the model
-    num_epochs = 5
+    num_epochs = 50
     for epoch in range(num_epochs):
         print()
         plt.clf()
