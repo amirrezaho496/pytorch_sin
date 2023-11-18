@@ -34,8 +34,10 @@ class MyDataset(torch.utils.data.Dataset):
 
 # Define your main function here
 def main():
+    minlimit = 0
+    maxlimit = 15
     # Prepare data
-    X = torch.arange(0, 30, 0.01).unsqueeze(dim=1)
+    X = torch.arange(minlimit, maxlimit, 0.001).unsqueeze(dim=1)
     Y = torch.sin(X) + torch.cos(X)
     
     device = 'cuda:0'
@@ -44,26 +46,34 @@ def main():
     Y = Y.to(device)
 
     # Define dataset
-    dataset = TensorDataset(X.__reversed__(), Y.__reversed__())
+    dataset = TensorDataset(X, Y)
 
     # Define data loader
-    train_loader = DataLoader(dataset, batch_size=64, shuffle=True)
+    train_loader = DataLoader(dataset, batch_size=500, shuffle=True)
 
-    # Initialize model and optimizer
-    model = Net(hidden_size= 512).to(device)
+    # Initialize model
+    hidden_size = 256
+    model = Net(hidden_size)
+    
+    # Load model 
+    model.load_state_dict(torch.load(f'models/sin_prediction_{hidden_size}.pt'))
+    
+    model = model.to(device)
     learning_rate = 0.001
     optimizer = optim.SGD(model.parameters(),momentum=0.9, lr=learning_rate)
     loss_fn = nn.MSELoss()
 
+    print(model.state_dict())
+
     # Train the model
-    num_epochs = 500
+    num_epochs = 5
     for epoch in range(num_epochs):
         print()
+        plt.clf()
         for batch ,(x , y) in enumerate(train_loader):
             # Zero the gradients
             optimizer.zero_grad()
-
-            #print(x,y)
+            
             # Forward pass
             outputs = model(x)
 
@@ -77,24 +87,26 @@ def main():
             optimizer.step() 
 
             
-            print(f"Epoch {epoch+1}, Batch {batch}/{len(train_loader)}, Loss {loss.item()}", end='\r')
-
-        with torch.inference_mode() :
-            model.eval()
-            preds = model(X)
+            print(f"Epoch {epoch+1}, Batch {batch+1}/{len(train_loader)}, Loss {loss.item()}", end='\r')
             
-            # Update the plot
-            plt.clf()
-            plt.plot(X.cpu().numpy(), Y.cpu().numpy(), 'b.')
-            plt.plot(X.cpu().numpy(), preds.cpu().numpy(), 'r.')
+            # Update the plot           
+            plt.plot(x.cpu().numpy(), y.cpu().numpy() ,'b.')
+            plt.plot(x.cpu().numpy(), outputs.detach().cpu().numpy(), 'r.')
             plt.xlabel('x')
             plt.ylabel('y')
             plt.ylim((-1.5, 1.5))
-            plt.xlim((-0.5, 30.5))
+            plt.xlim((-0.5 + minlimit, 0.5 + maxlimit))
             plt.title('Original Data vs. Predicted Data')
-            plt.pause(0.01)
+            plt.pause(0.001)
     
-    plt.show()
+    
+    with torch.inference_mode() : 
+        model.eval()
+        outputs = model(X)
+        plt.plot(X.cpu().numpy(), outputs.detach().cpu().numpy(), 'y.')
+        plt.show()
+    
+    torch.save(model.state_dict(), f'models/sin_prediction_{hidden_size}.pt')
 
 if __name__ == "__main__":
     main()
