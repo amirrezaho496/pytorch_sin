@@ -52,7 +52,7 @@ def main():
     train_loader = DataLoader(dataset, batch_size=500, shuffle=True)
 
     # Initialize model
-    hidden_size = 48
+    hidden_size = 4048
     model = Net(hidden_size)
     
     # Load model 
